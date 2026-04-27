@@ -333,9 +333,15 @@ function gh(n){return H.find(function(h){return h.name===n;})||{};}
 function gr(horseName){
   var h=gh(horseName);
   if(!h.owner)return 0;
-  var key=h.owner+'||'+h.cat;
+  var key=h.owner.trim()+'||'+h.cat.trim();
   if(OWNER_CAT_RATES[key]!==undefined)return OWNER_CAT_RATES[key];
-  return CATS_RATES[h.cat]||0;
+  return CATS_RATES[h.cat.trim()]||0;
+}
+
+function grDirect(owner,cat){
+  var key=owner.trim()+'||'+cat.trim();
+  if(OWNER_CAT_RATES[key]!==undefined)return OWNER_CAT_RATES[key];
+  return CATS_RATES[cat.trim()]||0;
 }
 
 function fmth(ym){
@@ -646,7 +652,7 @@ function rCierre(){
   activeHorses.forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
     if(!hasPension){
-      var rate=gr(h.name);
+      var rate=grDirect(h.owner||'',h.cat||'');
       var assumed={id:'assumed_'+h.name,horse:h.name,owner:h.owner||'',cat:h.cat||'',
         month:month,dias:30,rate:rate,total:30*rate,notes:'',assumed:true};
       mp.push(assumed);
@@ -691,7 +697,7 @@ function exportCSV(){
   // Add assumed 30-day pensions for active horses without entry
   H.filter(function(h){return h.active!==false;}).forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
-    if(!hasPension){var rate=gr(h.name);mp.push({owner:h.owner||'',horse:h.name,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate,notes:''});}
+    if(!hasPension){var rate=grDirect(h.owner||'',h.cat||'');mp.push({owner:h.owner||'',horse:h.name,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate,notes:''});}
   });
   var rows=[['Propietario','Caballo','Categoría','Tipo','Fecha / Mes','Días','Tarifa por día','Monto','Notas']];
   mp.sort(function(a,b){return a.owner.localeCompare(b.owner)||a.horse.localeCompare(b.horse);}).forEach(function(p){
@@ -710,7 +716,7 @@ function buildOwnerPDF(owner,month,mp,me){
   mp=mp.slice();
   H.filter(function(h){return h.active!==false&&(h.owner||'')===owner;}).forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
-    if(!hasPension){var rate=gr(h.name);mp.push({owner:h.owner||'',horse:h.name,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate,notes:''});}
+    if(!hasPension){var rate=grDirect(h.owner||'',h.cat||'');mp.push({owner:h.owner||'',horse:h.name,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate,notes:''});}
   });
   var oH=[...new Set([...mp.map(function(p){return p.horse;}),...me.map(function(e){return e.horse;})])].filter(function(h){return(gh(h).owner||'Sin propietario')===owner;}).sort();
   var grand=0;
