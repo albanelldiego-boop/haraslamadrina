@@ -642,34 +642,20 @@ function delE(id){id=String(id);
 function rCierre(){
   var sel=document.getElementById('cmes');if(!sel)return;
   var month=sel.value||new Date().toISOString().slice(0,7);
-  var mp=P.filter(function(p){return p.month===month;});
-  var me=E.filter(function(e){return e.date.slice(0,7)===month;});
-  var allH=[...new Set([...mp.map(function(p){return p.horse;}),...me.map(function(e){return e.horse;})])];
-  // Ensure extras have owner resolved from horse if missing
+  var mp=P.filter(function(p){return p.month===month;}).slice();
+  var me=E.filter(function(e){return e.date.slice(0,7)===month;}).slice();
+
+  // Resolve missing owners from horse data
   me.forEach(function(e){if(!e.owner){var h=gh(e.horse);e.owner=h.owner||'';}});
   mp.forEach(function(p){if(!p.owner){var h=gh(p.horse);p.owner=h.owner||'';}});
-  var allO=[...new Set(allH.map(function(h){return gh(h).owner||'Sin propietario';}))];
-  var totP=mp.reduce(function(s,p){return s+p.total;},0);
-  var totE=me.reduce(function(s,e){return s+e.monto;},0);
-
-  document.getElementById('cstats').innerHTML=
-    '<div class="sc"><div class="sv">'+allH.length+'</div><div class="sl">Caballos</div></div>'+
-    '<div class="sc"><div class="sv">'+allO.length+'</div><div class="sl">Propietarios</div></div>'+
-    '<div class="sc"><div class="sv">$'+fm(totP)+'</div><div class="sl">Total pensionado</div></div>'+
-    '<div class="sc"><div class="sv">$'+fm(totE)+'</div><div class="sl">Total extras</div></div>';
-  // Stats updated after assumed pensions - will be recalculated below
 
   // Add assumed 30-day pension for active horses without a pension entry
-  // Use fresh lookup from current OWNER_CAT_RATES and CATS_RATES
   H.filter(function(h){return h.active!==false;}).forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
     if(!hasPension){
-      // Look up rate fresh - try owner+cat first, then cat only
       var owner=String(h.owner||'').trim();
       var cat=String(h.cat||'').trim();
-      var rate=0;
-      // Try all OWNER_CAT_RATES keys with normalized comparison
-      var found=false;
+      var rate=0;var found=false;
       Object.keys(OWNER_CAT_RATES).forEach(function(k){
         if(found)return;
         var parts=k.split('||');
@@ -677,7 +663,6 @@ function rCierre(){
           rate=OWNER_CAT_RATES[k];found=true;
         }
       });
-      // Fallback to CATS_RATES
       if(!found){
         Object.keys(CATS_RATES).forEach(function(k){
           if(found)return;
@@ -685,19 +670,31 @@ function rCierre(){
         });
       }
       mp.push({id:'assumed_'+h.name,horse:h.name,owner:owner,cat:cat,
-        month:month,dias:30,rate:rate,total:30*rate,notes:'',assumed:true});
-      if(!allH.includes(h.name))allH.push(h.name);
-      if(!allO.includes(owner||'Sin propietario'))allO.push(owner||'Sin propietario');
+        month:month,dias:30,rate:rate,total:30*rate,notes:''});
     }
   });
-  // Recalculate totals with assumed pensions
-  totP=mp.reduce(function(s,p){return s+p.total;},0);
+
+  var allH=[...new Set([...mp.map(function(p){return p.horse;}),...me.map(function(e){return e.horse;})])];
+  var allO=[...new Set(allH.map(function(h){return(gh(h).owner||mp.find(function(p){return p.horse===h;})||{owner:''}).owner||'Sin propietario';}))];
+  // Fix allO to use resolved owners from mp
+  allO=[...new Set(mp.map(function(p){return p.owner||'Sin propietario';}).concat(me.map(function(e){return e.owner||'Sin propietario';})))];
+
+  var totP=mp.reduce(function(s,p){return s+p.total;},0);
+  var totE=me.reduce(function(s,e){return s+e.monto;},0);
+
   document.getElementById('cierre-warning').innerHTML='';
+  document.getElementById('cstats').innerHTML=
+    '<div class="sc"><div class="sv">'+allH.length+'</div><div class="sl">Caballos</div></div>'+
+    '<div class="sc"><div class="sv">'+allO.length+'</div><div class="sl">Propietarios</div></div>'+
+    '<div class="sc"><div class="sv">$'+fm(totP)+'</div><div class="sl">Total pensionado</div></div>'+
+    '<div class="sc"><div class="sv">$'+fm(totE)+'</div><div class="sl">Total extras</div></div>';
+
   if(!allH.length){document.getElementById('cdetail').innerHTML='<div class="empty">Sin registros este mes</div>';return;}
 
-  var html='';
+  var html2='';
   allO.sort().forEach(function(owner){
-    var oH=allH.filter(function(h){return(gh(h).owner||'Sin propietario')===owner;});
+    var oH=[...new Set([...mp.filter(function(p){return p.owner===owner;}).map(function(p){return p.horse;}),
+      ...me.filter(function(e){return e.owner===owner;}).map(function(e){return e.horse;})])];
     var oTot=0;var oHtml='';
     oH.sort().forEach(function(hn){
       var pen=mp.find(function(p){return p.horse===hn;});
@@ -714,10 +711,10 @@ function rCierre(){
       });
       oHtml+='</div>';
     });
-    html+='<div class="ob"><div class="on-hdr"><span>'+owner+'</span><span class="ot">$'+fm(oTot)+'</span></div>'+oHtml+'</div>';
+    html2+='<div class="ob"><div class="on-hdr"><span>'+owner+'</span><span class="ot">$'+fm(oTot)+'</span></div>'+oHtml+'</div>';
   });
-  html+='<div class="gt"><span>TOTAL DEL MES</span><span>$'+fm(totP+totE)+'</span></div>';
-  document.getElementById('cdetail').innerHTML=html;
+  html2+='<div class="gt"><span>TOTAL DEL MES</span><span>$'+fm(totP+totE)+'</span></div>';
+  document.getElementById('cdetail').innerHTML=html2;
 }
 
 function exportCSV(){
