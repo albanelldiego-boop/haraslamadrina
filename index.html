@@ -333,15 +333,27 @@ function gh(n){return H.find(function(h){return h.name===n;})||{};}
 function gr(horseName){
   var h=gh(horseName);
   if(!h.owner)return 0;
-  var key=h.owner.trim()+'||'+h.cat.trim();
-  if(OWNER_CAT_RATES[key]!==undefined)return OWNER_CAT_RATES[key];
-  return CATS_RATES[h.cat.trim()]||0;
+  return grDirect(h.owner,h.cat);
 }
 
+function normStr(s){return String(s||'').trim().replace(/\s+/g,' ');}
+
 function grDirect(owner,cat){
-  var key=owner.trim()+'||'+cat.trim();
+  var o=normStr(owner);var c=normStr(cat);
+  var key=o+'||'+c;
   if(OWNER_CAT_RATES[key]!==undefined)return OWNER_CAT_RATES[key];
-  return CATS_RATES[cat.trim()]||0;
+  // Fuzzy match - try all keys normalizing both sides
+  var keys=Object.keys(OWNER_CAT_RATES);
+  for(var i=0;i<keys.length;i++){
+    var parts=keys[i].split('||');
+    if(normStr(parts[0])===o&&normStr(parts[1])===c)return OWNER_CAT_RATES[keys[i]];
+  }
+  // Fallback to general category rate
+  var catKeys=Object.keys(CATS_RATES);
+  for(var j=0;j<catKeys.length;j++){
+    if(normStr(catKeys[j])===c)return CATS_RATES[catKeys[j]];
+  }
+  return 0;
 }
 
 function fmth(ym){
