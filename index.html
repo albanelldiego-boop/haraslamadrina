@@ -660,16 +660,34 @@ function rCierre(){
   // Stats updated after assumed pensions - will be recalculated below
 
   // Add assumed 30-day pension for active horses without a pension entry
-  var activeHorses=H.filter(function(h){return h.active!==false;});
-  activeHorses.forEach(function(h){
+  // Use fresh lookup from current OWNER_CAT_RATES and CATS_RATES
+  H.filter(function(h){return h.active!==false;}).forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
     if(!hasPension){
-      var rate=grDirect(h.owner||'',h.cat||'');
-      var assumed={id:'assumed_'+h.name,horse:h.name,owner:h.owner||'',cat:h.cat||'',
-        month:month,dias:30,rate:rate,total:30*rate,notes:'',assumed:true};
-      mp.push(assumed);
+      // Look up rate fresh - try owner+cat first, then cat only
+      var owner=String(h.owner||'').trim();
+      var cat=String(h.cat||'').trim();
+      var rate=0;
+      // Try all OWNER_CAT_RATES keys with normalized comparison
+      var found=false;
+      Object.keys(OWNER_CAT_RATES).forEach(function(k){
+        if(found)return;
+        var parts=k.split('||');
+        if(parts.length===2&&parts[0].trim()===owner&&parts[1].trim()===cat){
+          rate=OWNER_CAT_RATES[k];found=true;
+        }
+      });
+      // Fallback to CATS_RATES
+      if(!found){
+        Object.keys(CATS_RATES).forEach(function(k){
+          if(found)return;
+          if(k.trim()===cat){rate=CATS_RATES[k];found=true;}
+        });
+      }
+      mp.push({id:'assumed_'+h.name,horse:h.name,owner:owner,cat:cat,
+        month:month,dias:30,rate:rate,total:30*rate,notes:'',assumed:true});
       if(!allH.includes(h.name))allH.push(h.name);
-      if(!allO.includes(h.owner||'Sin propietario'))allO.push(h.owner||'Sin propietario');
+      if(!allO.includes(owner||'Sin propietario'))allO.push(owner||'Sin propietario');
     }
   });
   // Recalculate totals with assumed pensions
