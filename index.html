@@ -302,7 +302,7 @@ function syncFromSheets(callback){
       });
     }
     CATS.forEach(function(c){if(!CATS_RATES[c])CATS_RATES[c]=0;});
-    sv();rAll();tk('t-url','Sincronizado','ok');if(callback)callback();
+    sv();rAll();rCierre();tk('t-url','Sincronizado','ok');if(callback)callback();
   }).catch(function(){tk('t-url','Sin conexión — datos locales','w');if(callback)callback();});
 }
 
