@@ -940,16 +940,46 @@ function rCta(){
   var mov=document.getElementById('cta-movimientos');
   if(!owner){mov.innerHTML='<div class="empty">Seleccioná un propietario</div>';if(box)box.style.display='none';return;}
 
-  // All charges for this owner
+  // Get all months with activity for this owner
+  var allMonths=[...new Set([
+    ...P.filter(function(p){return p.owner===owner;}).map(function(p){return p.month;}),
+    ...E.filter(function(e){return e.owner===owner;}).map(function(e){return e.date.slice(0,7);})
+  ])].sort();
+
+  // Build charges per month using same logic as rCierre (with recalculated rates and assumed 30 days)
   var cargos=[];
-  P.filter(function(p){return p.owner===owner;}).forEach(function(p){
-    cargos.push({date:p.month+'-01',label:'Pensionado '+p.horse+' ('+p.dias+' días)',monto:p.total,type:'cargo',id:p.id});
+  allMonths.forEach(function(month){
+    var mp=P.filter(function(p){return p.month===month&&p.owner===owner;}).slice();
+    var me=E.filter(function(e){return e.date.slice(0,7)===month&&e.owner===owner;});
+
+    // Recalculate rates for existing pensions
+    mp.forEach(function(p){
+      var currentRate=grDirect(p.owner||'',p.cat||'');
+      if(currentRate>0){p.rate=currentRate;p.total=p.dias*currentRate;}
+    });
+
+    // Add assumed 30-day pensions for active horses of this owner without entry this month
+    H.filter(function(h){return h.active!==false&&(h.owner||'')===owner;}).forEach(function(h){
+      var hasPension=mp.find(function(p){return p.horse===h.name;});
+      if(!hasPension){
+        var rate=grDirect(h.owner||'',h.cat||'');
+        mp.push({horse:h.name,owner:owner,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate});
+      }
+    });
+
+    // Add pension charges
+    mp.forEach(function(p){
+      cargos.push({date:month+'-01',label:'Pensionado '+p.horse+(p.dias!==30?' ('+p.dias+' días)':''),monto:Math.round(p.total),type:'cargo',id:'p_'+p.horse+'_'+month});
+    });
+
+    // Add extras
+    me.forEach(function(e){
+      cargos.push({date:e.date,label:e.tipo+' — '+e.horse,monto:Math.round(e.monto),type:'cargo',id:e.id});
+    });
   });
-  E.filter(function(e){return e.owner===owner;}).forEach(function(e){
-    cargos.push({date:e.date,label:e.tipo+' — '+e.horse,monto:e.monto,type:'cargo',id:e.id});
-  });
+
   var pagos=PAGOS.filter(function(p){return p.owner===owner;}).map(function(p){
-    return{date:p.date,label:'Pago'+(p.nota?' ('+p.nota+')':''),monto:p.monto,type:'pago',id:p.id};
+    return{date:p.date,label:'Pago'+(p.nota?' ('+p.nota+')':''),monto:Math.round(p.monto),type:'pago',id:p.id};
   });
 
   var all=[...cargos,...pagos].sort(function(a,b){return a.date.localeCompare(b.date)||a.type.localeCompare(b.type);});
