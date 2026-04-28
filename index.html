@@ -957,13 +957,18 @@ function rCta(){
     return;
   }
 
-  // Build month range from start month to current month
+  // Build month range from start month to current month using string comparison
   var startMonth=OWNER_START[owner]||new Date().toISOString().slice(0,7);
   var curMonth=new Date().toISOString().slice(0,7);
   var months=[];
-  var d=new Date(startMonth+'-01');
-  var endD=new Date(curMonth+'-01');
-  while(d<=endD){months.push(d.toISOString().slice(0,7));d.setMonth(d.getMonth()+1);}
+  var ym=startMonth.split('-');
+  var y=parseInt(ym[0]);var m=parseInt(ym[1]);
+  var curYm=curMonth.split('-');
+  var curY=parseInt(curYm[0]);var curM=parseInt(curYm[1]);
+  while(y<curY||(y===curY&&m<=curM)){
+    months.push(y+'-'+(m<10?'0':'')+m);
+    m++;if(m>12){m=1;y++;}
+  }
 
   // Get horses of this owner
   var ownerHorses=H.filter(function(h){return h.active!==false&&String(h.owner||'').trim()===owner;});
