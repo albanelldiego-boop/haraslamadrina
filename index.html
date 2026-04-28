@@ -361,7 +361,7 @@ function fmth(ym){
   return['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][parseInt(p[1])-1]+' '+p[0];
 }
 function fdate(d){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
-function fm(n){return Number(n||0).toLocaleString('es-UY');}
+function fm(n){return Math.round(Number(n||0)).toLocaleString('es-UY');}
 
 function tk(id,msg,tp){
   var el=document.getElementById(id);if(!el)return;
@@ -647,7 +647,12 @@ function rCierre(){
 
   // Resolve missing owners from horse data
   me.forEach(function(e){if(!e.owner){var h=gh(e.horse);e.owner=h.owner||'';}});
-  mp.forEach(function(p){if(!p.owner){var h=gh(p.horse);p.owner=h.owner||'';}});
+  mp.forEach(function(p){
+    if(!p.owner){var h=gh(p.horse);p.owner=h.owner||'';}
+    // Always recalculate rate from current tariffs
+    var currentRate=grDirect(p.owner||'',p.cat||'');
+    if(currentRate>0){p.rate=currentRate;p.total=p.dias*currentRate;}
+  });
 
   // Add assumed 30-day pension for active horses without a pension entry
   H.filter(function(h){return h.active!==false;}).forEach(function(h){
