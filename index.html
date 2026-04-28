@@ -951,62 +951,60 @@ function rCta(){
   var owner=document.getElementById('cta-owner').value;
   var box=document.getElementById('cta-saldo-box');
   var mov=document.getElementById('cta-movimientos');
-  if(!owner){mov.innerHTML='<div class="empty">Seleccioná un propietario</div>';if(box)box.style.display='none';return;}
-
-  // Get all months from first record to current month
-  var recordedMonths=[...new Set([
-    ...P.filter(function(p){return p.owner===owner;}).map(function(p){return p.month;}),
-    ...E.filter(function(e){return e.owner===owner;}).map(function(e){return e.date.slice(0,7);}),
-    ...PAGOS.filter(function(p){return p.owner===owner;}).map(function(p){return p.date.slice(0,7);})
-  ])];
-  var curMonth=new Date().toISOString().slice(0,7);
-  var allMonths=[];
-  if(recordedMonths.length>0){
-    var firstMonth=recordedMonths.sort()[0];
-    // Generate all months from firstMonth to curMonth
-    var d=new Date(firstMonth+'-01');
-    var end=new Date(curMonth+'-01');
-    while(d<=end){
-      allMonths.push(d.toISOString().slice(0,7));
-      d.setMonth(d.getMonth()+1);
-    }
+  if(!owner){
+    mov.innerHTML='<div class="empty">Seleccioná un propietario</div>';
+    if(box)box.style.display='none';
+    return;
   }
-  allMonths.sort();
 
-  // Build charges per month using same logic as rCierre (with recalculated rates and assumed 30 days)
+  // Build month range from start month to current month
+  var startMonth=OWNER_START[owner]||new Date().toISOString().slice(0,7);
+  var curMonth=new Date().toISOString().slice(0,7);
+  var months=[];
+  var d=new Date(startMonth+'-01');
+  var endD=new Date(curMonth+'-01');
+  while(d<=endD){months.push(d.toISOString().slice(0,7));d.setMonth(d.getMonth()+1);}
+
+  // Get horses of this owner
+  var ownerHorses=H.filter(function(h){return h.active!==false&&String(h.owner||'').trim()===owner;});
+
+  // Build one charge per horse per month
   var cargos=[];
-  allMonths.forEach(function(month){
-    var mp=P.filter(function(p){return p.month===month&&p.owner===owner;}).slice();
-    var me=E.filter(function(e){return e.date.slice(0,7)===month&&e.owner===owner;});
-
-    // Recalculate rates for existing pensions
-    mp.forEach(function(p){
-      var currentRate=grDirect(p.owner||'',p.cat||'');
-      if(currentRate>0){p.rate=currentRate;p.total=p.dias*currentRate;}
+  months.forEach(function(month){
+    ownerHorses.forEach(function(h){
+      // Check if there's a manual pension entry for this horse this month
+      var pen=P.find(function(p){
+        return String(p.horse||'').trim()===h.name&&String(p.month||'').trim()===month;
+      });
+      var rate=grDirect(h.owner||'',h.cat||'');
+      var dias=pen?pen.dias:30;
+      var total=Math.round(dias*rate);
+      cargos.push({
+        date:month+'-01',
+        label:'Pensionado '+h.name+(dias!==30?' ('+dias+' días)':''),
+        monto:total,
+        type:'cargo',
+        id:'pen_'+h.name+'_'+month
+      });
     });
-
-    // Add assumed 30-day pensions for active horses of this owner without entry this month
-    H.filter(function(h){return h.active!==false&&(h.owner||'')===owner;}).forEach(function(h){
-      var hasPension=mp.find(function(p){return p.horse===h.name;});
-      if(!hasPension){
-        var rate=grDirect(h.owner||'',h.cat||'');
-        mp.push({horse:h.name,owner:owner,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate});
-      }
-    });
-
-    // Add pension charges
-    mp.forEach(function(p){
-      cargos.push({date:month+'-01',label:'Pensionado '+p.horse+(p.dias!==30?' ('+p.dias+' días)':''),monto:Math.round(p.total),type:'cargo',id:'p_'+p.horse+'_'+month});
-    });
-
-    // Add extras
-    me.forEach(function(e){
-      cargos.push({date:e.date,label:e.tipo+' — '+e.horse,monto:Math.round(e.monto),type:'cargo',id:e.id});
+    // Add extras for this month
+    E.filter(function(e){
+      return String(e.owner||'').trim()===owner&&e.date.slice(0,7)===month;
+    }).forEach(function(e){
+      cargos.push({
+        date:e.date,
+        label:e.tipo+' — '+e.horse,
+        monto:Math.round(e.monto),
+        type:'cargo',
+        id:String(e.id)
+      });
     });
   });
 
-  var pagos=PAGOS.filter(function(p){return p.owner===owner;}).map(function(p){
-    return{date:p.date,label:'Pago'+(p.nota?' ('+p.nota+')':''),monto:Math.round(p.monto),type:'pago',id:p.id};
+  var pagos=PAGOS.filter(function(p){
+    return String(p.owner||'').trim()===owner;
+  }).map(function(p){
+    return{date:p.date,label:'Pago'+(p.nota?' ('+p.nota+')':''),monto:Math.round(p.monto),type:'pago',id:String(p.id)};
   });
 
   var all=[...cargos,...pagos].sort(function(a,b){return a.date.localeCompare(b.date)||a.type.localeCompare(b.type);});
@@ -1032,9 +1030,12 @@ function rCta(){
     var color=item.type==='pago'?'#0f6e56':'#c0392b';
     var sign=item.type==='pago'?'+':'-';
     var saldoColor=saldoAcum>=0?'#0f6e56':'#c0392b';
-    var delBtn=item.type==='pago'?'<button class="btn-d" style="font-size:11px;padding:3px 8px" data-action="delPago" data-id="'+item.id+'">×</button>':'';
+    var delBtn=item.type==='pago'?
+      '<button class="btn-d" style="font-size:11px;padding:3px 8px" data-action="delPago" data-id="'+item.id+'">×</button>':'';
     return'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0f0eb;font-size:13px">'+
-      '<div style="flex:1"><span style="color:#aaa;font-size:11px">'+fdate(item.date)+'</span><br><span style="color:#333">'+item.label+'</span></div>'+
+      '<div style="flex:1">'+
+      '<span style="color:#aaa;font-size:11px">'+fdate(item.date)+'</span><br>'+
+      '<span style="color:#333">'+item.label+'</span></div>'+
       '<div style="text-align:right;display:flex;align-items:center;gap:8px">'+
       '<div><span style="font-weight:600;color:'+color+'">'+sign+'$'+fm(item.monto)+'</span><br>'+
       '<span style="font-size:11px;color:'+saldoColor+'">Saldo: $'+fm(saldoAcum)+'</span></div>'+
