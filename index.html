@@ -1107,6 +1107,13 @@ function init(){
     document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('on');});
     document.getElementById('s-extra').classList.add('on');
     document.querySelector('.hdr p').textContent='Modo capataz — '+d.toLocaleDateString('es-UY',{weekday:'long',day:'numeric',month:'long'});
+    // Add sync button for capataz
+    var syncBtn=document.createElement('button');
+    syncBtn.className='btn-s';
+    syncBtn.style.cssText='position:fixed;bottom:20px;right:20px;z-index:100;padding:10px 16px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+    syncBtn.textContent='↻ Actualizar';
+    syncBtn.onclick=function(){syncApp();};
+    document.body.appendChild(syncBtn);
   }
 
   rbHS();rbTS();pmf();rCierre();
