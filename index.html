@@ -326,7 +326,9 @@ function ld(){
   try{OWNER_CAT_RATES=JSON.parse(localStorage.getItem('hr_ocr')||'{}');}catch(e){OWNER_CAT_RATES={};}
   try{PAGOS=JSON.parse(localStorage.getItem('hr_pagos')||'[]');}catch(e){PAGOS=[];}
   try{OWNER_START=JSON.parse(localStorage.getItem('hr_os')||'{}');}catch(e){OWNER_START={};}
-  try{SURL=localStorage.getItem('hr_url')||'';}catch(e){SURL='';}
+  try{SURL=localStorage.getItem('hr_url')||''}catch(e){SURL='';}
+  // Si no hay URL configurada, usar la URL por defecto
+  if(!SURL)SURL='https://script.google.com/macros/s/AKfycbxzLEmrLxtHo5LY0M9kX_0CqyN6K8gGqrOZJFsRVpMx_QlLBaHnFTrY-r2k3Q7J_Fl_Vw/exec';
   CATS.forEach(function(c){if(!CATS_RATES[c])CATS_RATES[c]=0;});
 }
 
