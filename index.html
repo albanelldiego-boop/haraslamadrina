@@ -1109,13 +1109,27 @@ function init(){
     document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('on');});
     document.getElementById('s-extra').classList.add('on');
     document.querySelector('.hdr p').textContent='Modo capataz — '+d.toLocaleDateString('es-UY',{weekday:'long',day:'numeric',month:'long'});
-    // Add sync button for capataz
+    // Add sync button and toast for capataz
     var syncBtn=document.createElement('button');
     syncBtn.className='btn-s';
     syncBtn.style.cssText='position:fixed;bottom:20px;right:20px;z-index:100;padding:10px 16px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
     syncBtn.textContent='↻ Actualizar';
-    syncBtn.onclick=function(){syncApp();};
+    var syncToast=document.createElement('div');
+    syncToast.style.cssText='position:fixed;bottom:65px;right:20px;z-index:100;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;display:none';
+    document.body.appendChild(syncToast);
     document.body.appendChild(syncBtn);
+    syncBtn.onclick=function(){
+      syncBtn.disabled=true;syncBtn.textContent='Sincronizando...';
+      syncToast.style.display='none';
+      syncFromSheets(function(){
+        syncBtn.disabled=false;syncBtn.textContent='↻ Actualizar';
+        syncToast.style.display='block';
+        syncToast.style.background='#e8f8f2';syncToast.style.color='#0f6e56';syncToast.style.border='1px solid #9fe1cb';
+        syncToast.textContent='Datos actualizados';
+        rbTS();rbHS();
+        setTimeout(function(){syncToast.style.display='none';},3000);
+      });
+    };
   }
 
   rbHS();rbTS();pmf();rCierre();
