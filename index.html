@@ -965,13 +965,18 @@ function rCta(){
 
   // Build month range from start month to current month using string comparison
   var startMonth=OWNER_START[owner]||new Date().toISOString().slice(0,7);
-  var curMonth=new Date().toISOString().slice(0,7);
+  // Last closed month = previous month
+  var now=new Date();
+  var lastM=now.getMonth(); // getMonth() is 0-based, so this gives previous month (1-based)
+  var lastY=now.getFullYear();
+  if(lastM===0){lastM=12;lastY--;}
+  var lastMonth=lastY+'-'+(lastM<10?'0':'')+lastM;
   var months=[];
   var ym=startMonth.split('-');
   var y=parseInt(ym[0]);var m=parseInt(ym[1]);
-  var curYm=curMonth.split('-');
-  var curY=parseInt(curYm[0]);var curM=parseInt(curYm[1]);
-  while(y<curY||(y===curY&&m<=curM)){
+  var endYm=lastMonth.split('-');
+  var endY=parseInt(endYm[0]);var endM=parseInt(endYm[1]);
+  while(y<endY||(y===endY&&m<=endM)){
     months.push(y+'-'+(m<10?'0':'')+m);
     m++;if(m>12){m=1;y++;}
   }
