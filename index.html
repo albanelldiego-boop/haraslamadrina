@@ -203,6 +203,22 @@ textarea{resize:none;font-size:14px;line-height:1.5}
   <div id="horselist" style="margin-top:10px"></div>
 
   <div class="div"></div>
+  <p class="sec-title">Historial de categorías por caballo</p>
+  <p style="font-size:12px;color:#888;margin-bottom:10px">Registrá cuándo cambió la categoría de un caballo. El cierre usará la categoría correcta para cada mes.</p>
+  <div class="r3">
+    <div><label style="margin-top:0">Caballo</label><select id="ch-horse" style="font-size:12px;padding:8px"></select></div>
+    <div><label style="margin-top:0">Nueva categoría</label><select id="ch-cat" style="font-size:12px;padding:8px">
+      <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
+      <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+      <option>Yegua en entrenamiento</option><option>Otro</option>
+    </select></div>
+    <div><label style="margin-top:0">Desde</label><input type="date" id="ch-desde" style="font-size:12px;padding:8px"></div>
+  </div>
+  <button class="btn-s" style="width:100%;margin-top:8px" onclick="saveCatHistory()">Guardar cambio de categoría</button>
+  <div id="ch-list" style="margin-top:10px"></div>
+  <div id="t-ch" class="toast" style="margin-top:6px"></div>
+
+  <div class="div"></div>
   <p class="sec-title">Tarifas de pensionado ($ por día)</p>
   <p style="font-size:12px;color:#888;margin-bottom:12px">Podés definir tarifas generales por categoría, y sobreescribirlas con tarifas específicas por propietario y categoría.</p>
 
@@ -220,6 +236,42 @@ textarea{resize:none;font-size:14px;line-height:1.5}
     <button class="btn-s" style="width:100%;margin-top:8px" onclick="saveOwnerCatRate()">Guardar tarifa específica</button>
     <div id="owner-rates-list" style="margin-top:10px"></div>
   </div>
+
+  <div class="div" style="margin-top:16px"></div>
+  <p class="sec-title">Historial de cambios de tarifas</p>
+  <p style="font-size:12px;color:#888;margin-bottom:10px">Registrá cuándo cambió una tarifa. El cierre usará la tarifa correcta para cada mes.</p>
+  <div class="r2" style="margin-bottom:8px">
+    <div>
+      <label style="margin-top:0">Tipo</label>
+      <select id="th-tipo" onchange="rTHForm()" style="font-size:12px;padding:8px">
+        <option value="categoria">Categoría general</option>
+        <option value="propietario_cat">Propietario + Categoría</option>
+      </select>
+    </div>
+    <div><label style="margin-top:0">Desde</label><input type="date" id="th-desde" style="font-size:12px;padding:8px"></div>
+  </div>
+  <div id="th-form-cat">
+    <label style="margin-top:0">Categoría</label>
+    <select id="th-cat" style="font-size:13px;padding:8px;width:100%">
+      <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
+      <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+      <option>Yegua en entrenamiento</option><option>Otro</option>
+    </select>
+  </div>
+  <div id="th-form-ownercat" style="display:none">
+    <div class="r2">
+      <div><label style="margin-top:0">Propietario</label><select id="th-owner" style="font-size:12px;padding:8px"></select></div>
+      <div><label style="margin-top:0">Categoría</label><select id="th-ocat" style="font-size:12px;padding:8px">
+        <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
+        <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+        <option>Yegua en entrenamiento</option><option>Otro</option>
+      </select></div>
+    </div>
+  </div>
+  <label>Tarifa ($/día)</label>
+  <input type="number" id="th-valor" placeholder="0" min="0">
+  <button class="btn-s" style="width:100%;margin-top:8px" onclick="saveTarifaHistory()">Guardar cambio de tarifa</button>
+  <div id="th-list" style="margin-top:10px"></div>
 
   <div id="t-cfg" class="toast" style="margin-top:8px"></div>
 
@@ -248,7 +300,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
 </div>
 
 <script>
-var H=[],P=[],E=[],T=[],PAGOS=[],CATS_RATES={},OWNER_CAT_RATES={},OWNER_START={},SURL='';
+var H=[],P=[],E=[],T=[],PAGOS=[],CATS_RATES={},OWNER_CAT_RATES={},OWNER_START={},CAT_HISTORY=[],TARIFA_HISTORY=[],SURL='';
 var CATS=['Yegua madre','Padrillo','Potrillo al pie','Potrillo destetado','Potro en entrenamiento','Yegua en entrenamiento','Otro'];
 var DTIP=['Medicamento','Herrero','Veterinario','Vitaminas','Vacuna','Dentista','Flete','Herraje especial'];
 
@@ -281,6 +333,8 @@ function syncFromSheets(callback){
   api({action:'getAll'}).then(function(data){
     if(data.error){tk('t-url','Error: '+data.error,'e');return;}
     if(data.tipos&&data.tipos.length)T=data.tipos.map(function(t){return String(t.nombre||t);}).filter(Boolean);
+    if(data.catHistory)CAT_HISTORY=data.catHistory.map(function(r){return{id:String(r.id),horse:String(r.caballo||''),cat:String(r.categoria||''),desde:String(r.desde||'')};});
+    if(data.tarifaHistory)TARIFA_HISTORY=data.tarifaHistory.map(function(r){return{id:String(r.id),key:String(r.key||''),tipo:String(r.tipo||''),valor:Number(r.valor||0),desde:String(r.desde||'')};});
     if(data.pagos)PAGOS=data.pagos.map(function(p){return{
       id:String(p.id),owner:String(p.propietario||p.owner||'').trim(),
       date:String(p.fecha||p.date||'').trim().slice(0,10),
@@ -327,6 +381,8 @@ function ld(){
   try{OWNER_CAT_RATES=JSON.parse(localStorage.getItem('hr_ocr')||'{}');}catch(e){OWNER_CAT_RATES={};}
   try{PAGOS=JSON.parse(localStorage.getItem('hr_pagos')||'[]');}catch(e){PAGOS=[];}
   try{OWNER_START=JSON.parse(localStorage.getItem('hr_os')||'{}');}catch(e){OWNER_START={};}
+  try{CAT_HISTORY=JSON.parse(localStorage.getItem('hr_ch')||'[]');}catch(e){CAT_HISTORY=[];}
+  try{TARIFA_HISTORY=JSON.parse(localStorage.getItem('hr_th')||'[]');}catch(e){TARIFA_HISTORY=[];}
   try{SURL=localStorage.getItem('hr_url')||''}catch(e){SURL='';}
   // Si no hay URL configurada, usar la URL por defecto
   if(!SURL)SURL='https://script.google.com/macros/s/AKfycbzu34Pn-D4xYkbXhBe3H6mBqX-xITb3BfmHQN8pzpiEoQ7WHyTrpL8wsC7QgseecRpCdw/exec';
@@ -342,6 +398,8 @@ function sv(){
   localStorage.setItem('hr_ocr',JSON.stringify(OWNER_CAT_RATES));
   localStorage.setItem('hr_pagos',JSON.stringify(PAGOS));
   localStorage.setItem('hr_os',JSON.stringify(OWNER_START));
+  localStorage.setItem('hr_ch',JSON.stringify(CAT_HISTORY));
+  localStorage.setItem('hr_th',JSON.stringify(TARIFA_HISTORY));
 }
 
 function gh(n){return H.find(function(h){return h.name===n;})||{};}
@@ -392,7 +450,7 @@ function st(name,btn){
   if(name==='hist')rHist();
   if(name==='cierre')rCierre();
   if(name==='cta'){rbHS();rCta();}
-  if(name==='cfg'){rbHS();rHL();rTar();rOwnerCatRates();rTL();rOSList();var osel=document.getElementById('os-owner');if(osel){var owners=[...new Set(H.map(function(h){return h.owner;}))].filter(Boolean).sort();osel.innerHTML=owners.map(function(o){return'<option value="'+o+'">'+ o+'</option>';}).join('');}}
+  if(name==='cfg'){rbHS();rHL();rTar();rOwnerCatRates();rTL();rOSList();rCHList();rTHList();var osel=document.getElementById('os-owner');if(osel){var owners=[...new Set(H.map(function(h){return h.owner;}))].filter(Boolean).sort();osel.innerHTML=owners.map(function(o){return'<option value="'+o+'">'+ o+'</option>';}).join('');}}
 }
 
 function rbHS(){
@@ -992,7 +1050,8 @@ function rCta(){
       var pen=P.find(function(p){
         return String(p.horse||'').trim()===h.name&&String(p.month||'').trim()===month;
       });
-      var rate=grDirect(h.owner||'',h.cat||'');
+      var cat=getCatEnMes(h.name,month);
+      var rate=getTarifaEnMes(h.owner||'',cat,month);
       var dias=pen?pen.dias:30;
       var total=Math.round(dias*rate);
       cargos.push({
@@ -1087,6 +1146,114 @@ function delOwnerStart(owner){
   rOSList();
 }
 
+// -- CAT HISTORY UI --
+function saveCatHistory(){
+  var horse=document.getElementById('ch-horse').value;
+  var cat=document.getElementById('ch-cat').value;
+  var desde=document.getElementById('ch-desde').value;
+  if(!horse)return tk('t-ch','Seleccioná un caballo','w');
+  if(!desde)return tk('t-ch','Ingresá la fecha','w');
+  var id=String(Date.now());
+  CAT_HISTORY.push({id:id,horse:horse,cat:cat,desde:desde});
+  sv();rCHList();
+  tk('t-ch','Cambio de categoría guardado','ok');
+  if(SURL)api({action:'saveCatHistory',id:id,caballo:horse,categoria:cat,desde:desde}).catch(function(){});
+}
+
+function rCHList(){
+  var el=document.getElementById('ch-list');if(!el)return;
+  // Populate horse selector
+  var hsel=document.getElementById('ch-horse');
+  if(hsel){hsel.innerHTML=H.map(function(h){return'<option value="'+h.name+'">'+h.name+'</option>';}).join('');}
+  if(!CAT_HISTORY.length){el.innerHTML='<p style="font-size:12px;color:#aaa">Sin cambios registrados</p>';return;}
+  var sorted=CAT_HISTORY.slice().sort(function(a,b){return b.desde.localeCompare(a.desde);});
+  el.innerHTML=sorted.map(function(e){
+    return'<div class="hli"><span><strong>'+e.horse+'</strong> → '+e.cat+' <span style="color:#aaa;font-size:11px">desde '+fdate(e.desde)+'</span></span>'+
+    '<button class="btn-d" data-action="delCatHistory" data-id="'+e.id+'">×</button></div>';
+  }).join('');
+}
+
+// -- TARIFF HISTORY UI --
+function rTHForm(){
+  var tipo=document.getElementById('th-tipo').value;
+  document.getElementById('th-form-cat').style.display=tipo==='categoria'?'block':'none';
+  document.getElementById('th-form-ownercat').style.display=tipo==='propietario_cat'?'block':'none';
+}
+
+function saveTarifaHistory(){
+  var tipo=document.getElementById('th-tipo').value;
+  var desde=document.getElementById('th-desde').value;
+  var valor=parseFloat(document.getElementById('th-valor').value)||0;
+  var key='';
+  if(tipo==='categoria'){
+    key=document.getElementById('th-cat').value;
+  } else {
+    var owner=document.getElementById('th-owner').value;
+    var cat=document.getElementById('th-ocat').value;
+    key=owner+'||'+cat;
+  }
+  if(!desde)return tk('t-cfg','Ingresá la fecha','w');
+  if(valor<=0)return tk('t-cfg','Ingresá el valor de la tarifa','w');
+  var id=String(Date.now());
+  TARIFA_HISTORY.push({id:id,key:key,tipo:tipo,valor:valor,desde:desde});
+  sv();rTHList();
+  tk('t-cfg','Cambio de tarifa guardado','ok');
+  if(SURL)api({action:'saveTarifaHistory',id:id,key:key,tipo:tipo,valor:valor,desde:desde}).catch(function(){});
+}
+
+function rTHList(){
+  var el=document.getElementById('th-list');if(!el)return;
+  // Populate owner selector
+  var osel=document.getElementById('th-owner');
+  if(osel){var owners=[...new Set(H.map(function(h){return h.owner;}))].filter(Boolean).sort();
+    osel.innerHTML=owners.map(function(o){return'<option value="'+o+'">'+o+'</option>';}).join('');}
+  if(!TARIFA_HISTORY.length){el.innerHTML='<p style="font-size:12px;color:#aaa">Sin cambios de tarifa registrados</p>';return;}
+  var sorted=TARIFA_HISTORY.slice().sort(function(a,b){return b.desde.localeCompare(a.desde);});
+  el.innerHTML=sorted.map(function(e){
+    return'<div class="hli"><span><strong>'+e.key+'</strong> → $'+fm(e.valor)+'/día <span style="color:#aaa;font-size:11px">desde '+fdate(e.desde)+'</span></span>'+
+    '<button class="btn-d" data-action="delTarifaHistory" data-id="'+e.id+'">×</button></div>';
+  }).join('');
+}
+
+// Get category of a horse in a given month (yyyy-mm)
+function getCatEnMes(horseName, month){
+  var h=gh(horseName);
+  if(!h.name) return '';
+  // Get all category history entries for this horse
+  var entries=CAT_HISTORY.filter(function(e){return e.horse===horseName;});
+  // Sort descending by date
+  entries.sort(function(a,b){return b.desde.localeCompare(a.desde);});
+  // Find the most recent entry that started before or during this month
+  var monthEnd=month+'-31';
+  for(var i=0;i<entries.length;i++){
+    if(entries[i].desde<=monthEnd) return entries[i].cat;
+  }
+  // Fallback to current category
+  return h.cat||'';
+}
+
+// Get tariff for owner+cat in a given month (yyyy-mm)
+function getTarifaEnMes(owner, cat, month){
+  var monthEnd=month+'-31';
+  // Check owner+cat specific history first
+  var key=owner.trim()+'||'+cat.trim();
+  var entries=TARIFA_HISTORY.filter(function(e){return normStr(e.key)===normStr(key)&&e.tipo==='propietario_cat';});
+  entries.sort(function(a,b){return b.desde.localeCompare(a.desde);});
+  for(var i=0;i<entries.length;i++){
+    if(entries[i].desde<=monthEnd) return entries[i].valor;
+  }
+  // Fallback to current owner+cat rate
+  if(OWNER_CAT_RATES[key]!==undefined) return OWNER_CAT_RATES[key];
+  // Check general category history
+  var catEntries=TARIFA_HISTORY.filter(function(e){return normStr(e.key)===normStr(cat)&&e.tipo==='categoria';});
+  catEntries.sort(function(a,b){return b.desde.localeCompare(a.desde);});
+  for(var i=0;i<catEntries.length;i++){
+    if(catEntries[i].desde<=monthEnd) return catEntries[i].valor;
+  }
+  // Fallback to current category rate
+  return CATS_RATES[cat.trim()]||0;
+}
+
 function rAll(){rbHS();rbTS();pmf();rCierre();}
 
 document.addEventListener('click',function(ev){
@@ -1102,6 +1269,8 @@ document.addEventListener('click',function(ev){
   else if(action==='saveEditE')saveEditE(id);
   else if(action==='delPago')delPago(id);
   else if(action==='delOwnerStart'){delete OWNER_START[id];localStorage.setItem('hr_os',JSON.stringify(OWNER_START));rOSList();}
+  else if(action==='delCatHistory'){CAT_HISTORY=CAT_HISTORY.filter(function(e){return e.id!==id;});sv();rCHList();if(SURL)api({action:'deleteCatHistory',id:id}).catch(function(){});}
+  else if(action==='delTarifaHistory'){TARIFA_HISTORY=TARIFA_HISTORY.filter(function(e){return e.id!==id;});sv();rTHList();if(SURL)api({action:'deleteTarifaHistory',id:id}).catch(function(){});}
 });
 
 
