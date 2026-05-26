@@ -741,10 +741,11 @@ function rCierre(){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
     if(!hasPension){
       var owner=String(h.owner||'').trim();
-      var cat=getCatEnMes(h.name, month);
-      var rate=getTarifaEnMes(owner, cat, month);
-      mp.push({id:'assumed_'+h.name,horse:h.name,owner:owner,cat:cat,
-        month:month,dias:30,rate:rate,total:30*rate,notes:''});
+      var periods=getPensionPeriods(h.name, owner, month);
+      periods.forEach(function(per,idx){
+        mp.push({id:'assumed_'+h.name+'_'+idx,horse:h.name,owner:owner,cat:per.cat,
+          month:month,dias:per.dias,rate:per.rate,total:per.total,notes:''});
+      });
     }
   });
 
@@ -776,8 +777,13 @@ function rCierre(){
       var hTot=(pen?pen.total:0)+hEx.reduce(function(s,e){return s+e.monto;},0);
       oTot+=hTot;
       oHtml+='<div class="hs">';
-      oHtml+='<div class="ht"><span>'+hn+' <span class="cb">'+(gh(hn).cat||'')+'</span></span><span style="font-size:12px;color:#666">$'+fm(hTot)+'</span></div>';
-      if(pen)oHtml+='<div class="ir"><span>Pensionado ('+pen.dias+' días × $'+fm(pen.rate)+')</span><b>$'+fm(pen.total)+'</b></div>';
+      oHtml+='<div class="ht"><span>'+hn+'</span><span style="font-size:12px;color:#666">$'+fm(hTot)+'</span></div>';
+      // Show all pension periods for this horse
+      var horsePensions=mp.filter(function(p){return p.horse===hn;});
+      horsePensions.forEach(function(p){
+        var catLabel=p.cat?' <span class="cb">'+p.cat+'</span>':'';
+        oHtml+='<div class="ir"><span>Pensionado'+catLabel+' ('+p.dias+' días × $'+fm(p.rate)+')</span><b>$'+fm(p.total)+'</b></div>';
+      });
       var bt={};
       hEx.forEach(function(e){if(!bt[e.tipo])bt[e.tipo]=0;bt[e.tipo]+=e.monto;});
       Object.keys(bt).sort().forEach(function(tipo){
@@ -1248,6 +1254,60 @@ function getTarifaEnMes(owner, cat, month){
   }
   // Fallback to current category rate
   return CATS_RATES[cat.trim()]||0;
+}
+
+function getPensionPeriods(horseName, owner, month){
+  // Returns array of {cat, dias, rate, total} for each period in the month
+  var year=parseInt(month.split('-')[0]);
+  var mon=parseInt(month.split('-')[1]);
+  var daysInMonth=new Date(year, mon, 0).getDate();
+
+  // Get all cat history entries for this horse, sorted by date
+  var entries=CAT_HISTORY.filter(function(e){
+    return e.horse===horseName&&e.desde.slice(0,7)<=month;
+  }).sort(function(a,b){return a.desde.localeCompare(b.desde);});
+
+  // Get changes that happen WITHIN this month
+  var monthChanges=entries.filter(function(e){
+    return e.desde.slice(0,7)===month;
+  });
+
+  if(!monthChanges.length){
+    // No changes this month - single period
+    var cat=getCatEnMes(horseName, month);
+    var rate=getTarifaEnMes(owner, cat, month);
+    return [{cat:cat, dias:daysInMonth, rate:rate, total:Math.round(daysInMonth*rate)}];
+  }
+
+  // Build periods
+  var periods=[];
+  var periodStart=1;
+
+  monthChanges.forEach(function(change){
+    var changeDay=parseInt(change.desde.slice(8,10));
+    if(changeDay>periodStart){
+      // Period before this change
+      var dias=changeDay-periodStart;
+      var cat=getCatEnMes(horseName, month.slice(0,7)+'-'+(periodStart<10?'0':'')+periodStart);
+      // Use cat from BEFORE this change
+      var prevEntries=entries.filter(function(e){return e.desde<change.desde;});
+      var prevCat=prevEntries.length?prevEntries[prevEntries.length-1].cat:(function(){var h=gh(horseName);return h.cat||'';})();
+      var rate=getTarifaEnMes(owner, prevCat, month);
+      periods.push({cat:prevCat, dias:dias, rate:rate, total:Math.round(dias*rate)});
+    }
+    periodStart=changeDay;
+  });
+
+  // Last period (from last change to end of month)
+  if(periodStart<=daysInMonth){
+    var dias=daysInMonth-periodStart+1;
+    var lastChange=monthChanges[monthChanges.length-1];
+    var cat=lastChange.cat;
+    var rate=getTarifaEnMes(owner, cat, month);
+    periods.push({cat:cat, dias:dias, rate:rate, total:Math.round(dias*rate)});
+  }
+
+  return periods;
 }
 
 function rAll(){rbHS();rbTS();pmf();rCierre();}
