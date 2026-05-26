@@ -1260,7 +1260,7 @@ function getPensionPeriods(horseName, owner, month){
   // Returns array of {cat, dias, rate, total} for each period in the month
   var year=parseInt(month.split('-')[0]);
   var mon=parseInt(month.split('-')[1]);
-  var daysInMonth=new Date(year, mon, 0).getDate();
+  var daysInMonth=30; // Always 30 days per month
 
   // Get all cat history entries for this horse, sorted by date
   var entries=CAT_HISTORY.filter(function(e){
