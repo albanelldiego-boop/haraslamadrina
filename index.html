@@ -434,7 +434,14 @@ function fmth(ym){
   var p=ym.split('-');
   return['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][parseInt(p[1])-1]+' '+p[0];
 }
-function fdate(d){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function fdate(d){
+  if(!d)return '';
+  // Handle ISO datetime strings like 2026-05-03T03:00:00.000Z
+  var s=String(d).slice(0,10);
+  var p=s.split('-');
+  if(p.length!==3)return String(d);
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
 function fm(n){return Math.round(Number(n||0)).toLocaleString('es-UY');}
 
 function tk(id,msg,tp){
@@ -1154,10 +1161,12 @@ function saveCatHistory(){
   if(!horse)return tk('t-ch','Seleccioná un caballo','w');
   if(!desde)return tk('t-ch','Ingresá la fecha','w');
   var id=String(Date.now());
-  CAT_HISTORY.push({id:id,horse:horse,cat:cat,desde:desde});
+  // Ensure desde is stored as yyyy-mm-dd string
+  var desdeStr=String(desde).slice(0,10);
+  CAT_HISTORY.push({id:id,horse:horse,cat:cat,desde:desdeStr});
   sv();rCHList();
   tk('t-ch','Cambio de categoría guardado','ok');
-  if(SURL)api({action:'saveCatHistory',id:id,caballo:horse,categoria:cat,desde:desde}).catch(function(){});
+  if(SURL)api({action:'saveCatHistory',id:id,caballo:horse,categoria:cat,desde:desdeStr}).catch(function(){});
 }
 
 function rCHList(){
@@ -1195,10 +1204,11 @@ function saveTarifaHistory(){
   if(!desde)return tk('t-cfg','Ingresá la fecha','w');
   if(valor<=0)return tk('t-cfg','Ingresá el valor de la tarifa','w');
   var id=String(Date.now());
-  TARIFA_HISTORY.push({id:id,key:key,tipo:tipo,valor:valor,desde:desde});
+  var desdeStrT=String(desde).slice(0,10);
+  TARIFA_HISTORY.push({id:id,key:key,tipo:tipo,valor:valor,desde:desdeStrT});
   sv();rTHList();
   tk('t-cfg','Cambio de tarifa guardado','ok');
-  if(SURL)api({action:'saveTarifaHistory',id:id,key:key,tipo:tipo,valor:valor,desde:desde}).catch(function(){});
+  if(SURL)api({action:'saveTarifaHistory',id:id,key:key,tipo:tipo,valor:valor,desde:desdeStrT}).catch(function(){});
 }
 
 function rTHList(){
