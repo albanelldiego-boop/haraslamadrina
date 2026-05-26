@@ -212,7 +212,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
       <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
       <option>Yegua en entrenamiento</option><option>Otro</option>
     </select></div>
-    <div><label style="margin-top:0">Desde</label><input type="date" id="ch-desde" style="font-size:12px;padding:8px"></div>
+    <div><label style="margin-top:0">Desde</label><input type="text" id="ch-desde" placeholder="2026-05-01" pattern="\d{4}-\d{2}-\d{2}" style="font-size:12px;padding:8px"></div>
   </div>
   <button class="btn-s" style="width:100%;margin-top:8px" onclick="saveCatHistory()">Guardar cambio de categoría</button>
   <div id="ch-list" style="margin-top:10px"></div>
@@ -248,7 +248,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
         <option value="propietario_cat">Propietario + Categoría</option>
       </select>
     </div>
-    <div><label style="margin-top:0">Desde</label><input type="date" id="th-desde" style="font-size:12px;padding:8px"></div>
+    <div><label style="margin-top:0">Desde</label><input type="text" id="th-desde" placeholder="2026-05-01" pattern="\d{4}-\d{2}-\d{2}" style="font-size:12px;padding:8px"></div>
   </div>
   <div id="th-form-cat">
     <label style="margin-top:0">Categoría</label>
@@ -1161,8 +1161,8 @@ function saveCatHistory(){
   if(!horse)return tk('t-ch','Seleccioná un caballo','w');
   if(!desde)return tk('t-ch','Ingresá la fecha','w');
   var id=String(Date.now());
-  // Ensure desde is stored as yyyy-mm-dd string
-  var desdeStr=String(desde).slice(0,10);
+  var desdeStr=String(desde).trim().slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(desdeStr))return tk('t-ch','Ingresá la fecha en formato AAAA-MM-DD (ej: 2026-05-01)','w');
   CAT_HISTORY.push({id:id,horse:horse,cat:cat,desde:desdeStr});
   sv();rCHList();
   tk('t-ch','Cambio de categoría guardado','ok');
@@ -1204,7 +1204,8 @@ function saveTarifaHistory(){
   if(!desde)return tk('t-cfg','Ingresá la fecha','w');
   if(valor<=0)return tk('t-cfg','Ingresá el valor de la tarifa','w');
   var id=String(Date.now());
-  var desdeStrT=String(desde).slice(0,10);
+  var desdeStrT=String(desde).trim().slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(desdeStrT))return tk('t-cfg','Ingresá la fecha en formato AAAA-MM-DD (ej: 2026-05-01)','w');
   TARIFA_HISTORY.push({id:id,key:key,tipo:tipo,valor:valor,desde:desdeStrT});
   sv();rTHList();
   tk('t-cfg','Cambio de tarifa guardado','ok');
