@@ -299,9 +299,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
 </div>
 </div>
 
-<script>
-var H=[],P=[],E=[],T=[],PAGOS=[],CATS_RATES={},OWNER_CAT_RATES={},OWNER_START={},CAT_HISTORY=[],TARIFA_HISTORY=[],SURL='';
-var CATS=['Yegua madre','Padrillo','Potrillo al pie','Potrillo destetado','Potro en entrenamiento','Yegua en entrenamiento','Otro'];
+<script>var CATS=['Yegua madre','Padrillo','Potrillo al pie','Potrillo destetado','Potro en entrenamiento','Yegua en entrenamiento','Otro'];
 var DTIP=['Medicamento','Herrero','Veterinario','Vitaminas','Vacuna','Dentista','Flete','Herraje especial'];
 
 function api(params){
@@ -743,21 +741,8 @@ function rCierre(){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
     if(!hasPension){
       var owner=String(h.owner||'').trim();
-      var cat=String(h.cat||'').trim();
-      var rate=0;var found=false;
-      Object.keys(OWNER_CAT_RATES).forEach(function(k){
-        if(found)return;
-        var parts=k.split('||');
-        if(parts.length===2&&parts[0].trim()===owner&&parts[1].trim()===cat){
-          rate=OWNER_CAT_RATES[k];found=true;
-        }
-      });
-      if(!found){
-        Object.keys(CATS_RATES).forEach(function(k){
-          if(found)return;
-          if(k.trim()===cat){rate=CATS_RATES[k];found=true;}
-        });
-      }
+      var cat=getCatEnMes(h.name, month);
+      var rate=getTarifaEnMes(owner, cat, month);
       mp.push({id:'assumed_'+h.name,horse:h.name,owner:owner,cat:cat,
         month:month,dias:30,rate:rate,total:30*rate,notes:''});
     }
