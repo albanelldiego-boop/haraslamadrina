@@ -873,6 +873,35 @@ function buildOwnerPDF(owner,month,mp,me){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 16px;background:#0f6e56;border-radius:10px;color:#fff">'+
     '<span style="font-size:16px;font-weight:700">TOTAL A COBRAR</span>'+
     '<span style="font-size:22px;font-weight:700">$'+fm(grand)+'</span></div>'+
+    (function(){
+      // Calculate accumulated balance up to this month
+      var allMonthsUpTo=[];
+      if(OWNER_START[owner]){
+        var ym=OWNER_START[owner].split('-');
+        var sy=parseInt(ym[0]);var sm=parseInt(ym[1]);
+        var ey=parseInt(month.split('-')[0]);var em=parseInt(month.split('-')[1]);
+        while(sy<ey||(sy===ey&&sm<=em)){allMonthsUpTo.push(sy+'-'+(sm<10?'0':'')+sm);sm++;if(sm>12){sm=1;sy++;}}
+      } else {allMonthsUpTo=[month];}
+      var ownerHorses=H.filter(function(h){return h.active!==false&&String(h.owner||'').trim()===owner;});
+      var totalCargos=0;
+      allMonthsUpTo.forEach(function(m){
+        ownerHorses.forEach(function(h){
+          var pen=P.find(function(p){return String(p.horse||'').trim()===h.name&&String(p.month||'').trim()===m;});
+          var cat=getCatEnMes(h.name,m);
+          var rate=getTarifaEnMes(h.owner||'',cat,m);
+          totalCargos+=Math.round((pen?pen.dias:30)*rate);
+        });
+        E.filter(function(e){return String(e.owner||'').trim()===owner&&e.date.slice(0,7)===m;}).forEach(function(e){totalCargos+=Math.round(e.monto);});
+      });
+      var totalPagos=PAGOS.filter(function(p){return String(p.owner||'').trim()===owner;}).reduce(function(s,p){return s+Math.round(p.monto);},0);
+      var saldo=totalCargos-totalPagos;
+      var col=saldo>0?'#c0392b':'#0f6e56';
+      var lbl=saldo>0?'Saldo adeudado':'Saldo a favor';
+      return '<div style="margin-top:16px;padding:14px 16px;border:2px solid '+col+';border-radius:10px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div><p style="font-size:12px;color:#888;margin:0">'+lbl+' acumulado</p>'+
+        '<p style="font-size:12px;color:#555;margin:3px 0 0">Cargos: $'+fm(totalCargos)+' — Pagos: $'+fm(totalPagos)+'</p></div>'+
+        '<span style="font-size:22px;font-weight:700;color:'+col+'">$'+fm(Math.abs(saldo))+'</span></div>';
+    })()+
     '</body></html>';
 }
 
