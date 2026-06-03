@@ -829,19 +829,19 @@ function buildOwnerPDF(owner,month,mp,me){
   var grand=0;
   var rows='';
   oH.forEach(function(hn){
-    var pen=mp.find(function(p){return p.horse===hn;});
+    var horsePensPDF=mp.filter(function(p){return p.horse===hn;});
     var hEx=me.filter(function(e){return e.horse===hn;});
-    var hTot=(pen?pen.total:0)+hEx.reduce(function(s,e){return s+e.monto;},0);
+    var hTot=horsePensPDF.reduce(function(s,p){return s+p.total;},0)+hEx.reduce(function(s,e){return s+e.monto;},0);
     grand+=hTot;
     rows+='<tr style="background:#f9f9f7"><td colspan="3" style="padding:8px 10px;font-weight:700;font-size:14px;border-bottom:1px solid #e8e8e3">'+hn+
       '<span style="font-size:11px;font-weight:400;color:#888;margin-left:6px">'+(gh(hn).cat||'')+'</span></td>'+
       '<td style="padding:8px 10px;font-weight:700;text-align:right;border-bottom:1px solid #e8e8e3">$'+fm(hTot)+'</td></tr>';
-    if(pen){
-      rows+='<tr><td style="padding:5px 10px 5px 20px;font-size:13px;color:#555">Pensionado</td>'+
+    horsePensPDF.forEach(function(pen){
+      rows+='<tr><td style="padding:5px 10px 5px 20px;font-size:13px;color:#555">Pensionado <span style="font-size:11px;background:#f0f0eb;color:#666;padding:2px 6px;border-radius:8px">'+pen.cat+'</span></td>'+
         '<td style="padding:5px 10px;font-size:13px;color:#555;text-align:center">'+pen.dias+' días</td>'+
         '<td style="padding:5px 10px;font-size:13px;color:#555;text-align:center">$'+fm(pen.rate)+'/día</td>'+
         '<td style="padding:5px 10px;font-size:13px;text-align:right">$'+fm(pen.total)+'</td></tr>';
-    }
+    });
     var bt={};
     hEx.forEach(function(e){if(!bt[e.tipo])bt[e.tipo]=0;bt[e.tipo]+=e.monto;});
     Object.keys(bt).sort().forEach(function(tipo){
