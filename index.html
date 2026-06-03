@@ -823,7 +823,12 @@ function buildOwnerPDF(owner,month,mp,me){
   mp=mp.slice();
   H.filter(function(h){return h.active!==false&&(h.owner||'')===owner;}).forEach(function(h){
     var hasPension=mp.find(function(p){return p.horse===h.name;});
-    if(!hasPension){var rate=grDirect(h.owner||'',h.cat||'');mp.push({owner:h.owner||'',horse:h.name,cat:h.cat||'',month:month,dias:30,rate:rate,total:30*rate,notes:''});}
+    if(!hasPension){
+      var periods=getPensionPeriods(h.name,h.owner||'',month);
+      periods.forEach(function(per,idx){
+        mp.push({owner:h.owner||'',horse:h.name,cat:per.cat,month:month,dias:per.dias,rate:per.rate,total:per.total,notes:''});
+      });
+    }
   });
   var oH=[...new Set([...mp.map(function(p){return p.horse;}),...me.map(function(e){return e.horse;})])].filter(function(h){return(gh(h).owner||'Sin propietario')===owner;}).sort();
   var grand=0;
