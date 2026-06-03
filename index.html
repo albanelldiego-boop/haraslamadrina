@@ -772,9 +772,9 @@ function rCierre(){
       ...me.filter(function(e){return e.owner===owner;}).map(function(e){return e.horse;})])];
     var oTot=0;var oHtml='';
     oH.sort().forEach(function(hn){
-      var pen=mp.find(function(p){return p.horse===hn;});
+      var horsePens=mp.filter(function(p){return p.horse===hn;});
       var hEx=me.filter(function(e){return e.horse===hn;});
-      var hTot=(pen?pen.total:0)+hEx.reduce(function(s,e){return s+e.monto;},0);
+      var hTot=horsePens.reduce(function(s,p){return s+p.total;},0)+hEx.reduce(function(s,e){return s+e.monto;},0);
       oTot+=hTot;
       oHtml+='<div class="hs">';
       oHtml+='<div class="ht"><span>'+hn+'</span><span style="font-size:12px;color:#666">$'+fm(hTot)+'</span></div>';
