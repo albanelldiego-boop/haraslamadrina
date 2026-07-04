@@ -890,13 +890,18 @@ function buildOwnerPDF(owner,month,mp,me){
       var ownerHorses=H.filter(function(h){return h.active!==false&&String(h.owner||'').trim()===owner;});
       var totalCargos=0;
       allMonthsUpTo.forEach(function(m){
-        ownerHorses.forEach(function(h){
-          var pen=P.find(function(p){return String(p.horse||'').trim()===h.name&&String(p.month||'').trim()===m;});
-          var cat=getCatEnMes(h.name,m);
-          var rate=getTarifaEnMes(h.owner||'',cat,m);
-          totalCargos+=Math.round((pen?pen.dias:30)*rate);
-        });
-        E.filter(function(e){return String(e.owner||'').trim()===owner&&e.date.slice(0,7)===m;}).forEach(function(e){totalCargos+=Math.round(e.monto);});
+        if(m===month){
+          // Use already-calculated grand for current month to avoid double counting
+          totalCargos+=Math.round(grand);
+        } else {
+          ownerHorses.forEach(function(h){
+            var pen=P.find(function(p){return String(p.horse||'').trim()===h.name&&String(p.month||'').trim()===m;});
+            var cat=getCatEnMes(h.name,m);
+            var rate=getTarifaEnMes(h.owner||'',cat,m);
+            totalCargos+=Math.round((pen?pen.dias:30)*rate);
+          });
+          E.filter(function(e){return String(e.owner||'').trim()===owner&&e.date.slice(0,7)===m;}).forEach(function(e){totalCargos+=Math.round(e.monto);});
+        }
       });
       var totalPagos=PAGOS.filter(function(p){return String(p.owner||'').trim()===owner;}).reduce(function(s,p){return s+Math.round(p.monto);},0);
       var saldo=totalCargos-totalPagos;
