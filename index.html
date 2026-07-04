@@ -195,7 +195,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
   <label>Categoría</label>
   <select id="chc">
     <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
-    <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+    <option>Potrillo destetado</option><option>Potrillo destetado a box</option><option>Potro en entrenamiento</option>
     <option>Yegua en entrenamiento</option><option>Otro</option>
   </select>
   <button class="btn-s" style="margin-top:10px;width:100%" onclick="addHorse()">+ Agregar caballo</button>
@@ -209,7 +209,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
     <div><label style="margin-top:0">Caballo</label><select id="ch-horse" style="font-size:12px;padding:8px"></select></div>
     <div><label style="margin-top:0">Nueva categoría</label><select id="ch-cat" style="font-size:12px;padding:8px">
       <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
-      <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+      <option>Potrillo destetado</option><option>Potrillo destetado a box</option><option>Potro en entrenamiento</option>
       <option>Yegua en entrenamiento</option><option>Otro</option>
     </select></div>
     <div><label style="margin-top:0">Desde</label><input type="text" id="ch-desde" placeholder="2026-05-01" pattern="\d{4}-\d{2}-\d{2}" style="font-size:12px;padding:8px"></div>
@@ -254,7 +254,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
     <label style="margin-top:0">Categoría</label>
     <select id="th-cat" style="font-size:13px;padding:8px;width:100%">
       <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
-      <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+      <option>Potrillo destetado</option><option>Potrillo destetado a box</option><option>Potro en entrenamiento</option>
       <option>Yegua en entrenamiento</option><option>Otro</option>
     </select>
   </div>
@@ -263,7 +263,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
       <div><label style="margin-top:0">Propietario</label><select id="th-owner" style="font-size:12px;padding:8px"></select></div>
       <div><label style="margin-top:0">Categoría</label><select id="th-ocat" style="font-size:12px;padding:8px">
         <option>Yegua madre</option><option>Padrillo</option><option>Potrillo al pie</option>
-        <option>Potrillo destetado</option><option>Potro en entrenamiento</option>
+        <option>Potrillo destetado</option><option>Potrillo destetado a box</option><option>Potro en entrenamiento</option>
         <option>Yegua en entrenamiento</option><option>Otro</option>
       </select></div>
     </div>
@@ -299,7 +299,7 @@ textarea{resize:none;font-size:14px;line-height:1.5}
 </div>
 </div>
 
-<script>var CATS=['Yegua madre','Padrillo','Potrillo al pie','Potrillo destetado','Potro en entrenamiento','Yegua en entrenamiento','Otro'];
+<script>var CATS=['Yegua madre','Padrillo','Potrillo al pie','Potrillo destetado','Potrillo destetado a box','Potro en entrenamiento','Yegua en entrenamiento','Otro'];
 var DTIP=['Medicamento','Herrero','Veterinario','Vitaminas','Vacuna','Dentista','Flete','Herraje especial'];
 
 function api(params){
@@ -913,8 +913,11 @@ function exportAllPDFs(){
   var month=document.getElementById('cmes').value||new Date().toISOString().slice(0,7);
   var mp=P.filter(function(p){return p.month===month;});
   var me=E.filter(function(e){return e.date.slice(0,7)===month;});
-  var allH=[...new Set([...mp.map(function(p){return p.horse;}),...me.map(function(e){return e.horse;})])];
-  var owners=[...new Set(allH.map(function(h){return gh(h).owner||'Sin propietario';}))].sort();
+  var owners=[...new Set([
+    ...H.filter(function(h){return h.active!==false;}).map(function(h){return h.owner||'Sin propietario';}),
+    ...mp.map(function(p){return p.owner||'Sin propietario';}),
+    ...me.map(function(e){return e.owner||'Sin propietario;'})
+  ])].filter(Boolean).sort();
   if(!owners.length){alert('Sin registros para '+fmth(month));return;}
   owners.forEach(function(owner){
     var html=buildOwnerPDF(owner,month,mp,me);
